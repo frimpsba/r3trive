@@ -88,11 +88,12 @@ func (s *ProcessSensor) Start(ctx context.Context, ch chan<- event.Event) error 
 	s.consumer.EventCallback = func(e *etw.Event) error {
 		// Event ID 1: ProcessStart, Event ID 2: ProcessStop
 		var eventType event.EventType
-		if e.System.EventID == 1 {
+		switch e.System.EventID {
+		case 1:
 			eventType = event.ProcessCreate
-		} else if e.System.EventID == 2 {
+		case 2:
 			eventType = event.ProcessExit
-		} else {
+		default:
 			return nil
 		}
 

@@ -408,7 +408,7 @@ func (s *Store) GetIncident(ctx context.Context, id string) (event.Incident, err
 	var inc event.Incident
 	var (
 		severity, status, hostIDsJSON, attackMapJSON, artifactJSON, actionsJSON string
-		description, assignedTo, notes                                         sql.NullString
+		description, assignedTo, notes                                          sql.NullString
 	)
 
 	row := s.db.QueryRowContext(ctx, `
@@ -474,7 +474,7 @@ func (s *Store) QueryIncidents(ctx context.Context, statuses []event.IncidentSta
 		var inc event.Incident
 		var (
 			severity, status, hostIDsJSON, attackMapJSON, artifactJSON, actionsJSON string
-			description, assignedTo, notes                                         sql.NullString
+			description, assignedTo, notes                                          sql.NullString
 		)
 
 		if err := rows.Scan(&inc.ID, &inc.CreatedAt, &inc.UpdatedAt, &status, &severity, &inc.RiskScore, &inc.Title, &description, &hostIDsJSON, &attackMapJSON, &artifactJSON, &actionsJSON, &assignedTo, &notes); err == nil {

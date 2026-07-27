@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-// MatchString represents a matched string inside scanned data.
+// StringMatch represents a matched string inside scanned data.
 type StringMatch struct {
 	Name   string `json:"name"`
 	Offset uint64 `json:"offset"`
@@ -129,16 +129,16 @@ func (s *Scanner) ScanFile(path string) ([]RuleMatch, error) {
 func (s *Scanner) ScanDir(dir string) (map[string][]RuleMatch, error) {
 	results := make(map[string][]RuleMatch)
 
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return nil
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil || info == nil || info.IsDir() {
+			return nil // ignore unreadable paths and directories during traversal
 		}
 		if info.Size() > 50*1024*1024 {
 			return nil
 		}
 
-		matches, err := s.ScanFile(path)
-		if err == nil && len(matches) > 0 {
+		matches, scanErr := s.ScanFile(path)
+		if scanErr == nil && len(matches) > 0 {
 			results[path] = matches
 		}
 		return nil
@@ -158,16 +158,17 @@ func parseSimpleYARA(ruleStr, namespace string) (*SimpleRule, error) {
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "rule ") {
+		switch {
+		case strings.HasPrefix(line, "rule "):
 			parts := strings.Fields(line)
 			if len(parts) >= 2 {
 				rule.Name = strings.TrimSuffix(parts[1], "{")
 			}
-		} else if strings.HasPrefix(line, "strings:") {
+		case strings.HasPrefix(line, "strings:"):
 			inStrings = true
-		} else if strings.HasPrefix(line, "condition:") {
+		case strings.HasPrefix(line, "condition:"):
 			inStrings = false
-		} else if inStrings && strings.Contains(line, "=") {
+		case inStrings && strings.Contains(line, "="):
 			eqIdx := strings.Index(line, "=")
 			valStr := strings.TrimSpace(line[eqIdx+1:])
 			valStr = strings.Trim(valStr, "\"")

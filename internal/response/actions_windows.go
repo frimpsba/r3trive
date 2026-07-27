@@ -16,7 +16,7 @@ func sysKillProcess(ctx context.Context, pid int) error {
 	cmd := exec.CommandContext(ctx, "taskkill.exe", "/F", "/PID", fmt.Sprintf("%d", pid))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("taskkill failed: %v, output: %s", err, string(output))
+		return fmt.Errorf("taskkill failed: %w, output: %s", err, string(output))
 	}
 	return nil
 }
@@ -29,14 +29,14 @@ func sysBlockIP(ctx context.Context, ip string) error {
 	cmdIn := exec.CommandContext(ctx, "netsh", "advfirewall", "firewall", "add", "rule",
 		"name="+ruleName+"-IN", "dir=in", "action=block", "remoteip="+ip)
 	if out, err := cmdIn.CombinedOutput(); err != nil {
-		return fmt.Errorf("firewall block inbound failed: %v, output: %s", err, string(out))
+		return fmt.Errorf("firewall block inbound failed: %w, output: %s", err, string(out))
 	}
 
 	// Block outbound
 	cmdOut := exec.CommandContext(ctx, "netsh", "advfirewall", "firewall", "add", "rule",
 		"name="+ruleName+"-OUT", "dir=out", "action=block", "remoteip="+ip)
 	if out, err := cmdOut.CombinedOutput(); err != nil {
-		return fmt.Errorf("firewall block outbound failed: %v, output: %s", err, string(out))
+		return fmt.Errorf("firewall block outbound failed: %w, output: %s", err, string(out))
 	}
 
 	return nil
@@ -73,5 +73,5 @@ func sysQuarantineFile(ctx context.Context, path string) error {
 
 func sysIsolateHost(ctx context.Context) error {
 	slog.Warn("Host isolation requested but disabled for safety")
-	return fmt.Errorf("Host isolation is disabled by default for safety. Must be explicitly enabled with allowed management ports.")
+	return fmt.Errorf("host isolation is disabled by default for safety")
 }

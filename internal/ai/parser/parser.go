@@ -37,19 +37,20 @@ func ExtractJSON(input string, target any) error {
 
 // ExtractYAMLBlock extracts YAML content from markdown code fences.
 func ExtractYAMLBlock(input string) string {
-	if strings.Contains(input, "```yaml") {
+	switch {
+	case strings.Contains(input, "```yaml"):
 		parts := strings.Split(input, "```yaml")
 		if len(parts) > 1 {
 			sub := strings.Split(parts[1], "```")
 			return strings.TrimSpace(sub[0])
 		}
-	} else if strings.Contains(input, "```yml") {
+	case strings.Contains(input, "```yml"):
 		parts := strings.Split(input, "```yml")
 		if len(parts) > 1 {
 			sub := strings.Split(parts[1], "```")
 			return strings.TrimSpace(sub[0])
 		}
-	} else if strings.Contains(input, "```") {
+	case strings.Contains(input, "```"):
 		parts := strings.Split(input, "```")
 		if len(parts) > 1 {
 			return strings.TrimSpace(parts[1])
@@ -126,11 +127,12 @@ func ExtractConfidenceScore(input string) float64 {
 	}
 
 	inputLower := strings.ToLower(input)
-	if strings.Contains(inputLower, "high confidence") {
+	switch {
+	case strings.Contains(inputLower, "high confidence"):
 		return 0.90
-	} else if strings.Contains(inputLower, "medium confidence") {
+	case strings.Contains(inputLower, "medium confidence"):
 		return 0.70
-	} else if strings.Contains(inputLower, "low confidence") {
+	case strings.Contains(inputLower, "low confidence"):
 		return 0.40
 	}
 
