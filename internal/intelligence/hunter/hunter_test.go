@@ -20,6 +20,7 @@ func TestHunter(t *testing.T) {
 
 	if res == nil {
 		t.Fatalf("expected non-nil HuntResult")
+		return
 	}
 
 	if len(res.Findings) == 0 {

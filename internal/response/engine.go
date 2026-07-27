@@ -244,16 +244,20 @@ func (e *Engine) quarantineFile(ctx context.Context, params map[string]any) (Act
 
 func (e *Engine) isolateHost(ctx context.Context, params map[string]any) (ActionResult, error) {
 	err := sysIsolateHost(ctx)
-	success := err == nil
-	msg := "Host isolated (management ports allowed)"
-	if !success {
-		msg = fmt.Sprintf("Failed to isolate host: %v", err)
+	if err != nil {
+		return ActionResult{
+			Action:     ActionIsolateHost,
+			Success:    false,
+			Message:    fmt.Sprintf("Failed to isolate host: %v", err),
+			Timestamp:  time.Now().UTC(),
+			Reversible: true,
+		}, nil
 	}
 
 	return ActionResult{
 		Action:     ActionIsolateHost,
-		Success:    success,
-		Message:    msg,
+		Success:    true,
+		Message:    "Host isolated (management ports allowed)",
 		Timestamp:  time.Now().UTC(),
 		Reversible: true,
 	}, nil
