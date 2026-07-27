@@ -63,7 +63,7 @@ func (c *Compiler) AddString(ruleStr string, namespace string) error {
 
 // AddFile reads and compiles a YARA rule file.
 func (c *Compiler) AddFile(path string, namespace string) error {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Clean(path)) // #nosec G304
 	if err != nil {
 		return fmt.Errorf("reading yara file: %w", err)
 	}
@@ -95,9 +95,13 @@ func (s *Scanner) ScanBytes(data []byte) ([]RuleMatch, error) {
 				if len(strData) > 64 {
 					strData = strData[:64] + "..."
 				}
+				offsetVal := uint64(0)
+				if loc[0] >= 0 {
+					offsetVal = uint64(loc[0]) // #nosec G115
+				}
 				matchedStrings = append(matchedStrings, StringMatch{
 					Name:   fmt.Sprintf("$s%d", idx+1),
-					Offset: uint64(loc[0]),
+					Offset: offsetVal,
 					Data:   strData,
 				})
 			}
@@ -118,7 +122,7 @@ func (s *Scanner) ScanBytes(data []byte) ([]RuleMatch, error) {
 
 // ScanFile scans a file on disk for rule matches.
 func (s *Scanner) ScanFile(path string) ([]RuleMatch, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Clean(path)) // #nosec G304
 	if err != nil {
 		return nil, fmt.Errorf("reading target file: %w", err)
 	}

@@ -63,7 +63,9 @@ jobs:
         cache: true
     - name: Install libyara-dev
       run: sudo apt-get update && sudo apt-get install -y libyara-dev pkg-config
+    - name: Install golangci-lint
+      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v6
-      with:
-        args: --timeout=5m
+      env:
+        CGO_ENABLED: "1"
+      run: $(go env GOPATH)/bin/golangci-lint run --timeout=5m
