@@ -135,7 +135,7 @@ func (s *Scanner) ScanDir(dir string) (map[string][]RuleMatch, error) {
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil || info == nil || info.IsDir() {
-			return nil // ignore unreadable paths and directories during traversal
+			return nil //nolint:nilerr // ignore unreadable paths during traversal
 		}
 		if info.Size() > 50*1024*1024 {
 			return nil
