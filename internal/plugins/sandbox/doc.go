@@ -1,9 +1,2 @@
-// Package sandbox implements plugin isolation and security boundaries.
+// Package sandbox provides isolated execution boundaries and resource limits for plugins.
 package sandbox
-
-// TODO: Implement plugin sandboxing:
-// - Process isolation (plugins run as separate processes)
-// - Capability-based permissions
-// - Resource limits (CPU, memory, network)
-// - Audit logging of plugin actions
-// - Crash recovery without affecting core

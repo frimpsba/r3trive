@@ -1,8 +1,3 @@
-// Package parser extracts structured data from AI model responses.
+// Package parser extracts structured data from AI model responses,
+// including JSON blocks, YAML rule blocks, confidence scores, and remediation steps.
 package parser
-
-// TODO: Implement response parser:
-// - JSON extraction from natural language responses
-// - Structured alert/rule parsing
-// - Confidence scoring from AI output
-// - Fallback handling for malformed responses

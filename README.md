@@ -131,10 +131,15 @@ r3trive sigma hunt --ruleset /rules/custom/
 curl -sSL https://raw.githubusercontent.com/thrive-spectrexq/r3trive/main/install.sh | bash
 ```
 
-**From source:**
+**From source (via Makefile or Go CLI):**
 ```bash
 git clone https://github.com/thrive-spectrexq/r3trive
 cd r3trive
+
+# Using Go CLI directly:
+go build -o r3trive ./cmd/r3trive
+
+# Or using Makefile:
 make build
 sudo make install
 ```

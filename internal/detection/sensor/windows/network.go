@@ -5,6 +5,7 @@ package windows
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -143,7 +144,11 @@ func (s *NetworkSensor) Start(ctx context.Context, ch chan<- event.Event) error 
 		return nil
 	}
 
-	provider := etw.MustParseProvider(KernelNetworkProviderGUID)
+	provider, err := etw.ParseProvider(strings.Trim(KernelNetworkProviderGUID, "{}"))
+	if err != nil {
+		s.updateHealth(err)
+		return fmt.Errorf("failed to parse etw provider: %w", err)
+	}
 	if err := s.session.EnableProvider(provider); err != nil {
 		s.updateHealth(err)
 		return fmt.Errorf("failed to enable provider: %w", err)

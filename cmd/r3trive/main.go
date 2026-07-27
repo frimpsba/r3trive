@@ -65,6 +65,8 @@ func newRootCmd() *cobra.Command {
  | | \ \ ___) | | |  | | \ \ _| |_   \  /  | |____ 
  |_|  \_\____/  |_|  |_|  \_\_____|   \/   |______|
 
+Maintained by https://github.com/thrive-spectrexq
+
 R3TRIVE is a cross-platform cybersecurity platform built for defensive
 security operations at scale. It combines behavioral endpoint detection,
 AI-assisted investigation, automated response, and threat hunting into

@@ -4,9 +4,18 @@ import (
 	"testing"
 )
 
-func TestPostgresStore_UnsupportedError(t *testing.T) {
-	_, err := New("postgres://user:pass@localhost:5432/r3trive")
+func TestPostgresStoreNew(t *testing.T) {
+	_, err := New("")
 	if err == nil {
-		t.Fatal("expected error when initializing postgres store, got nil")
+		t.Errorf("expected error for empty DSN")
 	}
+
+	store, err := New("postgres://user:pass@localhost:5432/r3trive?sslmode=disable")
+	if err != nil {
+		t.Fatalf("unexpected initialization error: %v", err)
+	}
+	if store.DSN() != "postgres://user:pass@localhost:5432/r3trive?sslmode=disable" {
+		t.Errorf("DSN mismatch")
+	}
+	_ = store.Close()
 }

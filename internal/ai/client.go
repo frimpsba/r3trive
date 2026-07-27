@@ -34,11 +34,22 @@ func NewClient(cfg config.AIConfig) (Client, error) {
 			APIKey:   cfg.APIKey,
 			client:   &http.Client{Timeout: 60 * time.Second},
 		}, nil
+	case "mock", "dev":
+		return &MockClient{ModelName: cfg.Model}, nil
 	case "none", "":
 		return nil, errors.New("ai backend is disabled")
 	default:
 		return nil, fmt.Errorf("unsupported ai backend: %s", cfg.Backend)
 	}
+}
+
+// MockClient provides an offline testing client implementation.
+type MockClient struct {
+	ModelName string
+}
+
+func (m *MockClient) Chat(ctx context.Context, prompt string) (string, error) {
+	return fmt.Sprintf("[Analyst Response (%s)] Analysis completed for prompt:\n%s", m.ModelName, prompt), nil
 }
 
 // OllamaClient interacts with a local or remote Ollama instance.

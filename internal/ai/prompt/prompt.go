@@ -32,7 +32,7 @@ func BuildIncidentExplanationPrompt(inc event.Incident) string {
 
 // BuildRuleGenerationPrompt generates a prompt asking the AI to construct a detection rule.
 func BuildRuleGenerationPrompt(description string) string {
-	return fmt.Sprintf("%s\n\nGenerate a YAML detection rule for R3TRIVE matching the following scenario:\n%s\n\nOutput only valid YAML.", SystemPersona, description)
+	return fmt.Sprintf("%s\n\nGenerate a YAML detection rule for R3TRIVE matching the following scenario:\n%s\n\nOutput only valid YAML within ```yaml code block.", SystemPersona, description)
 }
 
 // BuildAttackChainPrompt generates a prompt for attack chain reconstruction.
@@ -49,5 +49,57 @@ func BuildAttackChainPrompt(inc event.Incident) string {
 	}
 
 	sb.WriteString("\nOutline the progression from Initial Access -> Execution -> Persistence -> C2.")
+	return sb.String()
+}
+
+// BuildActivitySummaryPrompt generates a prompt to summarize host telemetry activity.
+func BuildActivitySummaryPrompt(events []event.Event) string {
+	var sb strings.Builder
+	sb.WriteString(SystemPersona)
+	sb.WriteString(fmt.Sprintf("\n\nSummarize the security telemetry log sequence containing %d events:\n\n", len(events)))
+
+	for i, evt := range events {
+		sb.WriteString(fmt.Sprintf("%d. [%s] %s Sensor: %s Host: %s\n",
+			i+1, evt.Timestamp.Format("15:04:05"), evt.Type, evt.Sensor, evt.Host.Hostname))
+		if evt.Data.Process != nil {
+			sb.WriteString(fmt.Sprintf("   Process: %s (PID: %d, Cmd: %s)\n",
+				evt.Data.Process.Name, evt.Data.Process.PID, evt.Data.Process.CmdLine))
+		}
+		if evt.Data.Network != nil {
+			sb.WriteString(fmt.Sprintf("   Network: %s:%d -> %s:%d\n",
+				evt.Data.Network.SrcIP, evt.Data.Network.SrcPort, evt.Data.Network.DstIP, evt.Data.Network.DstPort))
+		}
+	}
+
+	sb.WriteString("\nHighlight any anomalous behavior, potential lateral movement, or unauthorized process launches.")
+	return sb.String()
+}
+
+// BuildFreeformQueryPrompt formats a custom user query with system context.
+func BuildFreeformQueryPrompt(query string, eventCtx string) string {
+	var sb strings.Builder
+	sb.WriteString(SystemPersona)
+	sb.WriteString("\n\nUser Security Query: ")
+	sb.WriteString(query)
+	if eventCtx != "" {
+		sb.WriteString("\n\nAssociated Telemetry Context:\n")
+		sb.WriteString(eventCtx)
+	}
+	return sb.String()
+}
+
+// BuildThreatAnalysisPrompt builds a prompt for analyzing IOC matches.
+func BuildThreatAnalysisPrompt(query string, iocHits []string) string {
+	var sb strings.Builder
+	sb.WriteString(SystemPersona)
+	sb.WriteString("\n\nThreat Intelligence Query: ")
+	sb.WriteString(query)
+	if len(iocHits) > 0 {
+		sb.WriteString("\n\nMatches against Threat Intelligence Feeds:\n")
+		for _, hit := range iocHits {
+			sb.WriteString(fmt.Sprintf("- IOC Match: %s\n", hit))
+		}
+	}
+	sb.WriteString("\nProvide threat actor attribution, typical TTPs, and recommended containment steps.")
 	return sb.String()
 }

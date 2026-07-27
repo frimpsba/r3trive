@@ -24,6 +24,11 @@ DIST_DIR := dist
 build: ## Build for current platform
 	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(BINARY) ./cmd/r3trive
 
+.PHONY: install
+install: build ## Install binary to /usr/local/bin
+	install -d /usr/local/bin
+	install $(DIST_DIR)/$(BINARY) /usr/local/bin/$(BINARY)
+
 .PHONY: build-all
 build-all: ## Cross-compile for all platforms
 	GOOS=linux   GOARCH=amd64 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(BINARY)-linux-amd64   ./cmd/r3trive

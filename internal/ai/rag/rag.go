@@ -3,8 +3,11 @@ package rag
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
+
+	"github.com/thrive-spectrexq/r3trive/pkg/event"
 )
 
 // Document represents a knowledge base record (ATT&CK technique, CVE, or Playbook).
@@ -17,16 +20,18 @@ type Document struct {
 	Relevance float64  `json:"relevance,omitempty"`
 }
 
-// KnowledgeBase manages vector-like or keyword-based document retrieval for AI context.
+// KnowledgeBase manages document retrieval and RAG search for AI context.
 type KnowledgeBase struct {
-	mu   sync.RWMutex
-	docs []Document
+	mu            sync.RWMutex
+	docs          []Document
+	incidentStore []event.Incident
 }
 
 // NewKnowledgeBase creates a new RAG knowledge base initialized with built-in ATT&CK data.
 func NewKnowledgeBase() *KnowledgeBase {
 	kb := &KnowledgeBase{
-		docs: make([]Document, 0),
+		docs:          make([]Document, 0),
+		incidentStore: make([]event.Incident, 0),
 	}
 	kb.seedATTACKData()
 	return kb
@@ -39,6 +44,13 @@ func (kb *KnowledgeBase) AddDocument(doc Document) {
 	kb.docs = append(kb.docs, doc)
 }
 
+// AddIncident indexes a historical incident for RAG querying.
+func (kb *KnowledgeBase) AddIncident(inc event.Incident) {
+	kb.mu.Lock()
+	defer kb.mu.Unlock()
+	kb.incidentStore = append(kb.incidentStore, inc)
+}
+
 // RetrieveRelevant finds the top relevant documents matching query keywords.
 func (kb *KnowledgeBase) RetrieveRelevant(ctx context.Context, query string, maxResults int) []Document {
 	kb.mu.RLock()
@@ -46,6 +58,9 @@ func (kb *KnowledgeBase) RetrieveRelevant(ctx context.Context, query string, max
 
 	queryLower := strings.ToLower(query)
 	keywords := strings.Fields(queryLower)
+	if len(keywords) == 0 {
+		return nil
+	}
 
 	type scoredDoc struct {
 		doc   Document
@@ -59,24 +74,32 @@ func (kb *KnowledgeBase) RetrieveRelevant(ctx context.Context, query string, max
 		contentLower := strings.ToLower(doc.Title + " " + doc.Content + " " + strings.Join(doc.Tags, " "))
 
 		for _, kw := range keywords {
-			if len(kw) < 3 {
+			if len(kw) < 2 {
 				continue
 			}
-			if strings.Contains(contentLower, kw) {
-				score += 1.0
-			}
+			// Exact ID match gets heavy weight
 			if strings.EqualFold(doc.ID, kw) {
-				score += 5.0
+				score += 10.0
+			}
+			// Title match
+			if strings.Contains(strings.ToLower(doc.Title), kw) {
+				score += 4.0
+			}
+			// Content term frequency
+			count := strings.Count(contentLower, kw)
+			if count > 0 {
+				score += math.Log1p(float64(count)) * 2.0
 			}
 		}
 
 		if score > 0 {
-			doc.Relevance = score
-			candidates = append(candidates, scoredDoc{doc: doc, score: score})
+			d := doc
+			d.Relevance = score
+			candidates = append(candidates, scoredDoc{doc: d, score: score})
 		}
 	}
 
-	// Sort by score
+	// Sort candidates by score descending
 	for i := 0; i < len(candidates); i++ {
 		for j := i + 1; j < len(candidates); j++ {
 			if candidates[j].score > candidates[i].score {
@@ -97,6 +120,27 @@ func (kb *KnowledgeBase) RetrieveRelevant(ctx context.Context, query string, max
 	return results
 }
 
+// SearchIncidents retrieves historical incidents matching search terms.
+func (kb *KnowledgeBase) SearchIncidents(query string, maxResults int) []event.Incident {
+	kb.mu.RLock()
+	defer kb.mu.RUnlock()
+
+	q := strings.ToLower(query)
+	var matches []event.Incident
+
+	for _, inc := range kb.incidentStore {
+		if strings.Contains(strings.ToLower(inc.Title), q) ||
+			strings.Contains(strings.ToLower(inc.ID), q) ||
+			strings.Contains(strings.ToLower(string(inc.Severity)), q) {
+			matches = append(matches, inc)
+			if maxResults > 0 && len(matches) >= maxResults {
+				break
+			}
+		}
+	}
+	return matches
+}
+
 // FormatContext formats retrieved documents into a string snippet for LLM prompts.
 func FormatContext(docs []Document) string {
 	if len(docs) == 0 {
@@ -106,7 +150,7 @@ func FormatContext(docs []Document) string {
 	var sb strings.Builder
 	sb.WriteString("\n--- Knowledge Base Context ---\n")
 	for _, d := range docs {
-		sb.WriteString(fmt.Sprintf("[%s] %s: %s\n", d.ID, d.Title, d.Content))
+		sb.WriteString(fmt.Sprintf("[%s] %s (%s): %s\n", d.ID, d.Title, d.Category, d.Content))
 	}
 	sb.WriteString("-------------------------------\n")
 	return sb.String()
@@ -141,6 +185,20 @@ func (kb *KnowledgeBase) seedATTACKData() {
 			Category: "Persistence",
 			Content:  "Adversaries may achieve persistence by adding an entry to the Windows Registry Run keys (HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run).",
 			Tags:     []string{"registry", "runkeys", "persistence", "autostart"},
+		},
+		Document{
+			ID:       "T1055",
+			Title:    "Process Injection",
+			Category: "Defense Evasion",
+			Content:  "Adversaries may inject code into processes in order to evade process-based defenses as well as possibly elevate privileges. Techniques include DLL injection, Process Hollowing, and Thread Execution Hijacking.",
+			Tags:     []string{"injection", "hollowing", "dll", "process", "evasion"},
+		},
+		Document{
+			ID:       "T1021.001",
+			Title:    "Remote Services: Remote Desktop Protocol",
+			Category: "Lateral Movement",
+			Content:  "Adversaries may use Valid Accounts to log into Remote Desktop Protocol (RDP) services to move laterally across a network.",
+			Tags:     []string{"rdp", "remote", "desktop", "lateral", "movement"},
 		},
 	)
 }

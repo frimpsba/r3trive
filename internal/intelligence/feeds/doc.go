@@ -1,12 +1,2 @@
-// Package feeds implements threat intelligence feed clients for
-// ingesting IOCs from external sources.
+// Package feeds manages fetching, parsing, and ingesting remote threat intelligence feeds.
 package feeds
-
-// TODO: Implement feed clients:
-// - STIX/TAXII 2.1 client
-// - MISP REST API client
-// - OpenCTI GraphQL client
-// - VirusTotal API client
-// - ThreatConnect API client
-// - Generic CSV/JSON feed ingester
-// - Feed scheduling and caching
